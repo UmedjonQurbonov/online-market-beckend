@@ -104,7 +104,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             'description': obj.product.description,
         }    
 
-class Cart(serializers.ModelSerializer):
+class CartSerializer(serializers.ModelSerializer):
     buyer_info = serializers.SerializerMethodField()
 
     class Meta:
