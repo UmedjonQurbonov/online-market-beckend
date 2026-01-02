@@ -6,7 +6,7 @@ class Shop(models.Model):
     name = models.CharField(max_length=50)
     description = models.CharField(max_length=50)
     logo = models.ImageField(upload_to="shops/", blank=True, null=True)
-    rating = models.IntegerField()
+    rating = models.IntegerField(default=0)
 
     def __str__(self):
         return f'{self.name}: {self.description}'
