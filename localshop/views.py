@@ -45,7 +45,7 @@ class ProductViewSet(ModelViewSet):
             return [AllowAny()]
 
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsSeller() | IsAdminUser(), IsProductOwner()]
+            return [IsSeller(), IsProductOwner()]
 
         return super().get_permissions()
 
@@ -60,6 +60,7 @@ class ProductViewSet(ModelViewSet):
 class ProductImageViewSet(ModelViewSet):
     queryset = ProductImage.objects.all()
     serializer_class = ProductImageSerializer
+    parser_classes = (MultiPartParser, FormParser)
 
     def get_permissions(self):
         if self.action in ["list", "retrieve"]:

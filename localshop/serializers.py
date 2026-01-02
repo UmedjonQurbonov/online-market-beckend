@@ -46,14 +46,30 @@ class CategorySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Категория с таким именем уже существует")
         return value
     
+class ProductImageSerializer(serializers.ModelSerializer):
+    product_info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductImage
+        fields = ['product', 'image', 'product_info']
+
+    def get_product_info(self, obj):
+        return {
+            'id': obj.product.id,
+            'title': obj.product.title,
+            'price': obj.product.price,
+            'stock': obj.product.stock,
+            'description': obj.product.description,
+        }    
 
 class ProductSerializer(serializers.ModelSerializer):
     shop_info = serializers.SerializerMethodField()
     category_info = serializers.SerializerMethodField()
+    images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
-        fields = ['id', 'shop', 'shop_info', 'category', 'category_info', 'title', 'article', 'description', 'price', 'stock', 'is_active']
+        fields = ['id', 'shop', 'shop_info', 'category', 'category_info', 'title', 'article', 'description', 'price', 'stock', 'is_active', 'images']
         extra_kwargs = {
             'is_active': {'read_only': True},
         }
@@ -77,7 +93,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return {
             'id': obj.shop.id,
             'name': obj.shop.name,
-            'logo': obj.shop.logo,
+            'logo': obj.shop.logo.url if obj.shop.logo else None,
             'rating': obj.shop.rating
         } 
     
@@ -88,21 +104,6 @@ class ProductSerializer(serializers.ModelSerializer):
             'description': obj.category.description,
         } 
 
-class ProductImageSerializer(serializers.ModelSerializer):
-    product_info = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ProductImage
-        fields = ['product', 'image', 'product_info']
-
-    def get_product_info(self, obj):
-        return {
-            'id': obj.product.id,
-            'title': obj.product.title,
-            'price': obj.product.price,
-            'stock': obj.product.stock,
-            'description': obj.product.description,
-        }    
 
 class CartSerializer(serializers.ModelSerializer):
     buyer_info = serializers.SerializerMethodField()
