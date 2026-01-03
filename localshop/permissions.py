@@ -29,3 +29,39 @@ class IsCartOwner(BasePermission):
 
     def has_object_permission(self, request, view, obj):
         return obj.buyer == request.user    
+    
+class IsCartOwnerOrAdmin(BasePermission):
+    message = "Можно управлять только своей корзиной."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user and request.user.is_staff:
+            return True
+
+        return obj.cart.buyer == request.user    
+
+class IsOrderOwnerOrAdmin(BasePermission):
+    message = "Вы можете управлять только своими заказами."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+
+        return obj.buyer == request.user    
+
+class IsOrderItemOwnerOrAdmin(BasePermission):
+    message = "Вы можете управлять только товарами в своих заказах."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+
+        return obj.order.buyer == request.user    
+    
+
+class IsReviewOwnerOrAdmin(BasePermission):
+    message = "Вы можете управлять только своими отзывами."
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_staff:
+            return True
+        return obj.author == request.user

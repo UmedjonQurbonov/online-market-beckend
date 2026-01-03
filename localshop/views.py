@@ -6,6 +6,8 @@ from .models import *
 from .serializers import *
 from .permissions import *
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import PermissionDenied
+from .utils import update_shop_rating
 
 class ShopViewSet(ModelViewSet):
     queryset = Shop.objects.all()
@@ -75,7 +77,7 @@ class ProductImageViewSet(ModelViewSet):
         product = serializer.validated_data.get("product")
 
         if product.shop.owner != self.request.user:
-            from rest_framework.exceptions import PermissionDenied
+            
             raise PermissionDenied("Вы не можете добавлять изображения к чужому товару.")
 
         serializer.save()    
@@ -109,3 +111,101 @@ class CartViewSet(ModelViewSet):
     def perform_create(self, serializer):
 
         serializer.save(buyer=self.request.user)        
+
+class CartItemViewSet(ModelViewSet):
+    queryset = CartItem.objects.all()
+    serializer_class = CartItemSerializator
+    permission_classes = [IsAuthenticated, IsCartOwnerOrAdmin]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff:
+            return CartItem.objects.all()
+
+        return CartItem.objects.filter(cart__buyer=user)
+
+    def perform_create(self, serializer):
+
+        cart = serializer.validated_data['cart']
+
+        if not self.request.user.is_staff and cart.buyer != self.request.user:
+            raise PermissionDenied("Нельзя добавлять товары в чужую корзину")
+
+        serializer.save()        
+
+class OrderViewSet(ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get_permissions(self):
+
+        base = [IsAuthenticated()]
+        if self.action in ["retrieve", "update", "partial_update", "destroy"]:
+            base.append(IsOrderOwnerOrAdmin())
+
+        return base
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff:
+            return Order.objects.all()
+
+        return Order.objects.filter(buyer=user)
+
+    def perform_create(self, serializer):
+        serializer.save(buyer=self.request.user)
+
+class OrderItemViewSet(ModelViewSet):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
+
+    def get_permissions(self):
+        base = [IsAuthenticated()]
+
+        if self.action in ["retrieve", "update", "partial_update", "destroy"]:
+            base.append(IsOrderItemOwnerOrAdmin())
+
+        return base
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff:
+            return OrderItem.objects.all()
+
+        return OrderItem.objects.filter(order__buyer=user)
+
+class ReviewViewSet(ModelViewSet):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+
+    def get_permissions(self):
+        base = [IsAuthenticated()]
+
+        if self.action in ["retrieve", "update", "partial_update", "destroy"]:
+            base.append(IsReviewOwnerOrAdmin())
+
+        return base
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_staff:
+            return Review.objects.all()
+
+        return Review.objects.filter(author=user)
+
+    def perform_create(self, serializer):
+        review = serializer.save(author=self.request.user)
+        update_shop_rating(review.shop)
+
+    def perform_update(self, serializer):
+        review = serializer.save()
+        update_shop_rating(review.shop)
+
+    def perform_destroy(self, instance):
+        shop = instance.shop
+        instance.delete()
+        update_shop_rating(shop)    

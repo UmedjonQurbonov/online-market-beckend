@@ -123,10 +123,11 @@ class CartSerializer(serializers.ModelSerializer):
 class CartItemSerializator(serializers.ModelSerializer):
     cart_info = serializers.SerializerMethodField()
     product_info = serializers.SerializerMethodField()
+    total_price = serializers.SerializerMethodField() 
 
     class Meta:
         model = CartItem
-        fields = ['id', 'cart', 'cart_info','product', 'product_info', 'quantity']
+        fields = ['id', 'cart', 'cart_info','product', 'product_info', 'quantity', 'total_price']
 
     def validate_quantity(self, value):
         if value < 1:
@@ -157,6 +158,8 @@ class CartItemSerializator(serializers.ModelSerializer):
             'stock': obj.product.stock,
             'description': obj.product.description,
         }   
+    def get_total_price(self, obj):
+        return obj.product.price * obj.quantity
 
 class OrderSerializer(serializers.ModelSerializer):
     buyer_info = serializers.SerializerMethodField()
@@ -254,11 +257,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
-    product_info = serializers.SerializerMethodField()
+    shop_info = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = ['id', 'author', 'author_info', 'product', 'product_info', 'rating', 'text', 'created_at']
+        fields = ['id', 'author', 'author_info', 'shop', 'shop_info', 'rating', 'text', 'created_at']
 
     def validate_rating(self, value):
         if not (1 <= value <= 5):
@@ -278,13 +281,17 @@ class ReviewSerializer(serializers.ModelSerializer):
             'email': obj.author.email,
         }
 
-    def get_product_info(self, obj):
+    def get_shop_info(self, obj):
+        logo_url = None
+        if obj.shop.logo and hasattr(obj.shop.logo, 'url'):
+            logo_url = obj.shop.logo.url
         return {
-            'id': obj.product.id,
-            'title': obj.product.title,
-            'price': obj.product.price,
-            'stock': obj.product.stock,
-        }
+        'id': obj.shop.id,
+        'owner': obj.shop.owner.first_name,
+        'name': obj.shop.name,
+        'logo': logo_url,
+        'rating': obj.shop.rating,
+    }
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)

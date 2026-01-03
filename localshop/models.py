@@ -78,7 +78,7 @@ class OrderItem(models.Model):
 
 class Review(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    shop = models.ForeignKey(Shop, on_delete=models.CASCADE)
     rating = models.IntegerField()
     text = models.CharField(max_length=50)
     created_at = models.DateTimeField(auto_now_add=True)
