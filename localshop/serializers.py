@@ -297,3 +297,22 @@ class ReviewSerializer(serializers.ModelSerializer):
         rep = super().to_representation(instance)
         rep['created_at_formatted'] = instance.created_at.strftime("%Y-%m-%d %H:%M")
         return rep 
+
+class SellerOrderSerializer(OrderSerializer):
+    def get_cart_info(self, obj):
+        user = self.context['request'].user
+        items = [
+            {
+                'product_id': item.product.id,
+                'title': item.product.title,
+                'quantity': item.quantity,
+                'price': item.product.price,
+                'subtotal': item.product.price * item.quantity
+            }
+            for item in obj.cart.items.all()
+            if item.product.shop.owner == user
+        ]
+        return {
+            'id': obj.cart.id,
+            'items': items
+        }

@@ -8,6 +8,7 @@ from .permissions import *
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import PermissionDenied
 from .utils import update_shop_rating
+from rest_framework import viewsets
 
 class ShopViewSet(ModelViewSet):
     queryset = Shop.objects.all()
@@ -208,4 +209,15 @@ class ReviewViewSet(ModelViewSet):
     def perform_destroy(self, instance):
         shop = instance.shop
         instance.delete()
-        update_shop_rating(shop)    
+        update_shop_rating(shop) 
+
+class SellerOrderViewSet(viewsets.ReadOnlyModelViewSet):
+
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Order.objects.filter(
+            cart__items__product__shop__owner=user
+        ).distinct()
